@@ -88,5 +88,5 @@ curl -X POST https://<your-n8n-domain>.app.n8n.cloud/webhook/generate-calendly-l
 ---
 ## 🖼 Workflow Overview
 
-![n8n Workflow](workflow.png)
+![n8n Workflow](Workflow.png)
 
