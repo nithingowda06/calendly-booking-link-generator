@@ -48,6 +48,17 @@ This project generates **personalized Calendly booking links** using **n8n webho
 10. **Respond to Webhook** – Returns the booking link as JSON response  
 
 ---
+🧪 Test with curl
+```
+curl -X POST https://<your-n8n-domain>.app.n8n.cloud/webhook/generate-calendly-link \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "<NAME>",
+    "email": "<EMAIL>"
+  }'
+```
+---
+
 ### 📥 Request Body
 ```json
 {
@@ -77,7 +88,7 @@ This project generates **personalized Calendly booking links** using **n8n webho
 }
 ```
 
-⚙️ Setup Instructions
+## ⚙️ Setup Instructions
 
 Import Calendly Booking Link Generator.json into n8n
 
@@ -91,16 +102,6 @@ Activate the workflow
 
 Use Production Webhook URL
 
----
-🧪 Test with curl
-```
-curl -X POST https://<your-n8n-domain>.app.n8n.cloud/webhook/generate-calendly-link \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "<NAME>",
-    "email": "<EMAIL>"
-  }'
-```
 ---
 
 
