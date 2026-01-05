@@ -76,9 +76,11 @@ Activate the workflow
 Use Production Webhook URL
 
 🧪 Test with curl
+```
 curl -X POST https://<your-n8n-domain>.app.n8n.cloud/webhook/generate-calendly-link \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Nithin",
-    "email": "nithin@gmail.com"
+    "name": "<NAME>",
+    "email": "<EMAIL>"
   }'
+```
