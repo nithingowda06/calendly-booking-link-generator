@@ -35,13 +35,35 @@ This project generates **personalized Calendly booking links** using **n8n webho
 
 ![n8n Workflow](Workflow.png)
 
-1. Webhook receives name and email  
-2. Configuration and Calendly auth setup  
-3. Fetch Calendly user details  
-4. Retrieve available event types  
-5. Select required event type  
-6. Generate personalized booking link  
-7. Log data to Google Sheets and return JSON response
+1. Webhook Trigger
+Receives the user’s name and email via a POST request to start the workflow.
+
+2. Set Configuration
+Sets up required configuration values such as Calendly API token and workflow parameters.
+
+3. Get Current User
+Fetches the authenticated Calendly user account details.
+
+4. Extract User
+Extracts and formats required user identifiers (user URI, organization data).
+
+5. Get Event Types
+Retrieves all available Calendly event types for the user.
+
+6. Select Event Type
+Selects the required event type (e.g., 30-Minute Meeting).
+
+7. Create Single-Use Link
+Generates a single-use Calendly booking link for the selected event.
+
+8. Build Personalized Link
+Personalizes the booking link using the user’s name and email.
+
+9. Append Row in Google Sheets
+Logs booking details (name, email, event type, link, timestamp, status) to Google Sheets.
+
+10. Respond to Webhook
+Returns a clean JSON response containing the booking link and booking status.
 
 ---
 ### 📥 Request Body
