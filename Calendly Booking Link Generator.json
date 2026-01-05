@@ -1,0 +1,601 @@
+{
+  "name": "Calendly Booking Link Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🔗 Calendly Booking Link Generator\n\n**What this workflow does:**\n1. 🔐 Authenticates with Calendly API\n2. 📋 Gets your event types\n3. 🔗 Creates single-use booking links\n4. ✉️ Personalizes links with recipient info\n5. 📊 Logs generated links to Google Sheets\n6. 💬 Notifies via Slack (optional)\n\n**Why Single-Use Links?**\nCalendly API does NOT allow direct booking.\nInstead, generate personalized links that:\n- Expire after one booking\n- Pre-fill invitee name/email\n- Can be tracked\n- Work seamlessly\n\n**Use Cases:**\n- CRM automation\n- Sales outreach\n- Customer support\n- Automated follow-ups",
+        "height": 620,
+        "width": 820,
+        "color": 5
+      },
+      "id": "745d7d50-85f8-4b13-bce4-10a5414a7bb2",
+      "name": "📋 WORKFLOW OVERVIEW",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        224
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Setup Instructions\n\n**Step 1: Calendly OAuth2**\n1. Go to calendly.com/integrations\n2. Click \"API & Webhooks\"\n3. Set up OAuth2 application\n4. In n8n, add Calendly OAuth2 credential\n\n**Step 2: Google Sheets (Optional)**\n1. Create a spreadsheet for tracking\n2. Headers: Name, Email, Link, Event, Created\n3. Add Google Sheets OAuth2 credential\n4. Update document ID in node\n\n**Step 3: Slack (Optional)**\n1. Create Slack app at api.slack.com\n2. Add bot token scopes\n3. Add Slack credential in n8n\n4. Set channel ID\n\n---\n\n**⚠️ Important Notes:**\n- Single-use links expire after:\n  - 1 booking, OR\n  - 90 days unused\n- Links are unique per generation\n- Cannot be modified after creation",
+        "height": 620,
+        "width": 860,
+        "color": 6
+      },
+      "id": "5f5ed6ab-2f75-4717-b271-76e8c7780540",
+      "name": "⚙️ SETUP GUIDE",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        832,
+        224
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-calendly-link",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2a9d3796-68ce-4915-928e-3ba8aa2bf8b2",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -48,
+        896
+      ],
+      "webhookId": "booking-link-generator",
+      "typeVersion": 2,
+      "notes": "POST with recipient details"
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 Webhook Input\n\n**POST Body:**\n```json\n{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"event_type_uri\": \"optional\"\n}\n```\n\nIf no event_type_uri,\nuses first active type.",
+        "height": 240,
+        "width": 344,
+        "color": 5
+      },
+      "id": "6e45ba7a-f00f-4c62-a21c-56b1464dc70a",
+      "name": "🎯 INPUT FORMAT",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -448,
+        832
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg1",
+              "name": "recipient_email",
+              "type": "string",
+              "value": "={{ $json.body?.email || 'test@example.com' }}"
+            },
+            {
+              "id": "cfg2",
+              "name": "recipient_name",
+              "type": "string",
+              "value": "={{ $json.body?.name || 'Test User' }}"
+            },
+            {
+              "id": "cfg3",
+              "name": "requested_event_type",
+              "type": "string",
+              "value": "={{ $json.body?.event_type_uri || '' }}"
+            },
+            {
+              "id": "cfg4",
+              "name": "utm_source",
+              "type": "string",
+              "value": "={{ $json.body?.utm_source || 'n8n' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cf1da42b-4c56-4b9d-b294-bcb5ec482586",
+      "name": "Set Configuration",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        208,
+        896
+      ],
+      "typeVersion": 3.4,
+      "notes": "Extract recipient info from request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "u1",
+              "name": "user_uri",
+              "type": "string",
+              "value": "={{ $json.resource?.uri }}"
+            },
+            {
+              "id": "u2",
+              "name": "user_name",
+              "type": "string",
+              "value": "={{ $json.resource?.name }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "0c85f1e5-4cc2-43ca-9e0f-cd186ffe065d",
+      "name": "Extract User",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -16,
+        1104
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "et1",
+              "name": "selected_event_type_uri",
+              "type": "string",
+              "value": "={{ $json.collection[0].uri }}\n"
+            },
+            {
+              "id": "et2",
+              "name": "selected_event_type_name",
+              "type": "string",
+              "value": "={{ $json.collection[0].name }}\n"
+            },
+            {
+              "id": "et3",
+              "name": "selected_event_duration",
+              "type": "number",
+              "value": "={{ $json.collection[0].duration }}\n"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "4ddcb92e-f960-45a8-b680-92e3a5c53a71",
+      "name": "Select Event Type",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        416,
+        1104
+      ],
+      "typeVersion": 3.4,
+      "notes": "Pick requested or first event type"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pl1",
+              "name": "base_booking_url",
+              "type": "string",
+              "value": "={{ $json.resource?.booking_url }}"
+            },
+            {
+              "id": "pl2",
+              "name": "personalized_booking_url",
+              "type": "string",
+              "value": "={{ $json.resource?.booking_url }}?name={{ encodeURIComponent($('Set Configuration').item.json.recipient_name) }}&email={{ encodeURIComponent($('Set Configuration').item.json.recipient_email) }}&utm_source={{ $('Set Configuration').item.json.utm_source }}"
+            },
+            {
+              "id": "pl3",
+              "name": "recipient_name",
+              "type": "string",
+              "value": "={{ $('Set Configuration').item.json.recipient_name }}"
+            },
+            {
+              "id": "pl4",
+              "name": "recipient_email",
+              "type": "string",
+              "value": "={{ $('Set Configuration').item.json.recipient_email }}"
+            },
+            {
+              "id": "pl5",
+              "name": "event_type_name",
+              "type": "string",
+              "value": "={{ $('Select Event Type').item.json.selected_event_type_name }}"
+            },
+            {
+              "id": "pl6",
+              "name": "event_duration",
+              "type": "number",
+              "value": "={{ $('Select Event Type').item.json.selected_event_duration }}"
+            },
+            {
+              "id": "pl7",
+              "name": "link_created_at",
+              "type": "string",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "30415cd3-bacb-405f-bde9-1c5fc6a3d419",
+      "name": "Build Personalized Link",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        224,
+        1312
+      ],
+      "typeVersion": 3.4,
+      "notes": "Add prefill params to URL"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ \n  {\n    success: true,\n    recipient: {\n      name: $json[\"Recipient Name\"],\n      email: $json[\"Recipient Email\"]\n    },\n    event: {\n      name: $json[\"Event Type\"],\n      duration_minutes: $json[\"Duration (min)\"]\n    },\n    booking: {\n      url: $json[\"Booking URL\"],\n      created_at: $json[\"Created At\"]\n    },\n    status: $json[\"Status\"]\n  }\n}}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3e390cb9-2889-4da7-8511-d39241d9efa5",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        240,
+        1520
+      ],
+      "typeVersion": 1.1,
+      "notes": "Return the generated link"
+    },
+    {
+      "parameters": {
+        "content": "## 📤 Response\n\n```json\n{\n  \"success\": true,\n  \"booking_url\": \"https://...\",\n  \"recipient\": {...},\n  \"event\": {...},\n  \"created_at\": \"...\",\n  \"expires\": \"Single-use or 90 days\"\n}\n```",
+        "height": 268,
+        "width": 396,
+        "color": 5
+      },
+      "id": "dfcdb0aa-d085-47e6-8a07-aea80cb2f052",
+      "name": "📤 RESPONSE",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1760,
+        848
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://api.calendly.com/users/me ",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzY3NTQ4NDY1LCJqdGkiOiIyZTdkNTE3Ni01YTJhLTQ2OGEtODc4Yy02YmNkMWUwYjVlNzMiLCJ1c2VyX3V1aWQiOiIxMDg1NmMzNi00NzVjLTQxMjUtODE3YS02Mzc0OGRiOTQxZGMifQ.XHHdfZyHeZPTM8MNmE5lCTEWwCPIuV-wjwLWlWaiaB7WDaTmKtJzyXOFx66RWIwxxj-kzI0ERLNCZlUVneqd6g"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        896
+      ],
+      "id": "20bbb95f-1f6a-4874-a259-819c0fb7afaf",
+      "name": "Get Current User"
+    },
+    {
+      "parameters": {
+        "method": "=GET",
+        "url": "=https://api.calendly.com/event_types?user={{ encodeURIComponent($json.resource.uri) }}&active=true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzY3NTQ4NDY1LCJqdGkiOiIyZTdkNTE3Ni01YTJhLTQ2OGEtODc4Yy02YmNkMWUwYjVlNzMiLCJ1c2VyX3V1aWQiOiIxMDg1NmMzNi00NzVjLTQxMjUtODE3YS02Mzc0OGRiOTQxZGMifQ.XHHdfZyHeZPTM8MNmE5lCTEWwCPIuV-wjwLWlWaiaB7WDaTmKtJzyXOFx66RWIwxxj-kzI0ERLNCZlUVneqd6g"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        1104
+      ],
+      "id": "a7ccee30-4c5d-4b08-8dc4-bf833851aa73",
+      "name": "Get Event Types"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.calendly.com/scheduling_links",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzY3NTQ4NDY1LCJqdGkiOiIyZTdkNTE3Ni01YTJhLTQ2OGEtODc4Yy02YmNkMWUwYjVlNzMiLCJ1c2VyX3V1aWQiOiIxMDg1NmMzNi00NzVjLTQxMjUtODE3YS02Mzc0OGRiOTQxZGMifQ.XHHdfZyHeZPTM8MNmE5lCTEWwCPIuV-wjwLWlWaiaB7WDaTmKtJzyXOFx66RWIwxxj-kzI0ERLNCZlUVneqd6g"
+            },
+            {
+              "name": "Content-Type ",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "owner_type",
+              "value": "EventType"
+            },
+            {
+              "name": "max_event_count",
+              "value": "1"
+            },
+            {
+              "name": "=owner",
+              "value": "={{ $json.selected_event_type_uri.trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -32,
+        1312
+      ],
+      "id": "524da91a-105a-4950-9a29-dd8d65847b8d",
+      "name": "Create Single-Use Link"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1wYV__95I-eVHlRdRJdJOVAOi0o-S8GQ1cytAWPdMVhQ/edit?gid=1184149587#gid=1184149587",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Generated Links",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Recipient Name": "=  {{ $json.recipient_name }}",
+            "Recipient Email": "=        {{ $json.recipient_email }}",
+            "Event Type": "=  {{ $json.event_type_name }}",
+            "Duration (min)": "=  {{ $json.event_duration }}",
+            "Booking URL": "=  {{ $json.base_booking_url }}",
+            "Created At": "=  {{ $json.link_created_at }}",
+            "Status": "CREATED"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Recipient Name",
+              "displayName": "Recipient Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recipient Email",
+              "displayName": "Recipient Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Event Type",
+              "displayName": "Event Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration (min)",
+              "displayName": "Duration (min)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booking URL",
+              "displayName": "Booking URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -48,
+        1520
+      ],
+      "id": "bbc5c355-ceec-4eb9-835d-99a6e4475860",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dRs5QykwrLv4JkGM",
+          "name": "Google Sheets account 6"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Personalized Link": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get Current User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Current User": {
+      "main": [
+        [
+          {
+            "node": "Extract User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract User": {
+      "main": [
+        [
+          {
+            "node": "Get Event Types",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Event Types": {
+      "main": [
+        [
+          {
+            "node": "Select Event Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Event Type": {
+      "main": [
+        [
+          {
+            "node": "Create Single-Use Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Single-Use Link": {
+      "main": [
+        [
+          {
+            "node": "Build Personalized Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "facaf330-a61d-49af-ad83-589732c36b32",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3a4b4e654aead79d2d09255e2ececbc66d1ecf677f1d9737489f1cc2897a8e2b"
+  },
+  "id": "qVMIY385PGgsB3Ef",
+  "tags": []
+}
