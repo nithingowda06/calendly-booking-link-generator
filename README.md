@@ -31,7 +31,19 @@ This project generates **personalized Calendly booking links** using **n8n webho
 
 
 ---
+## 🖼 Workflow Overview
 
+![n8n Workflow](Workflow.png)
+
+1. Webhook receives name and email  
+2. Configuration and Calendly auth setup  
+3. Fetch Calendly user details  
+4. Retrieve available event types  
+5. Select required event type  
+6. Generate personalized booking link  
+7. Log data to Google Sheets and return JSON response
+
+---
 ### 📥 Request Body
 ```json
 {
@@ -86,7 +98,5 @@ curl -X POST https://<your-n8n-domain>.app.n8n.cloud/webhook/generate-calendly-l
   }'
 ```
 ---
-## 🖼 Workflow Overview
 
-![n8n Workflow](Workflow.png)
 
